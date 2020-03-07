@@ -560,6 +560,7 @@ const ProTable = <T extends {}, U extends object>(
         }
         // reload 之后大概率会切换数据，清空一下选择。
         setSelectedRowKeys([]);
+        setSelectedRows([]);
         await current.reload();
       },
       fetchMore: async () => {
