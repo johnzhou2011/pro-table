@@ -4,6 +4,7 @@ import React, { useEffect, CSSProperties, useRef, useState, ReactNode } from 're
 import { Table, ConfigProvider, Card, Typography, Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import useMergeValue from 'use-merge-value';
+import { stringify } from 'use-json-comparison';
 import { ColumnsType, TablePaginationConfig, TableProps } from 'antd/es/table';
 import { FormItemProps, FormProps } from 'antd/es/form';
 import { ConfigConsumer, ConfigConsumerProps } from 'antd/lib/config-provider';
@@ -204,7 +205,7 @@ export interface ProTableProps<T, U extends { [key: string]: any }>
   /**
    * 默认的操作栏配置
    */
-  options?: OptionConfig<T>;
+  options?: OptionConfig<T> | false;
   /**
    * 是否显示搜索表单
    */
@@ -473,6 +474,9 @@ const ProTable = <T extends {}, U extends object>(
     ...rest
   } = props;
 
+  const [selectedRowKeys, setSelectedRowKeys] = useMergeValue<React.ReactText[]>([], {
+    value: propsRowSelection ? propsRowSelection.selectedRowKeys : undefined,
+  });
   const [formSearch, setFormSearch] = useState<{}>({});
 
   /**
@@ -505,14 +509,7 @@ const ProTable = <T extends {}, U extends object>(
       defaultPageSize: fetchPagination.pageSize || fetchPagination.defaultPageSize,
       onLoad,
       onRequestError,
-      effects: [
-        Object.values(params)
-          .filter(item => checkUndefinedOrNull(item))
-          .join('-'),
-        Object.values(formSearch)
-          .filter(item => checkUndefinedOrNull(item))
-          .join('-'),
-      ],
+      effects: [stringify(params), stringify(formSearch)],
     },
   );
 
@@ -561,6 +558,8 @@ const ProTable = <T extends {}, U extends object>(
         if (!current) {
           return;
         }
+        // reload 之后大概率会切换数据，清空一下选择。
+        setSelectedRowKeys([]);
         await current.reload();
       },
       fetchMore: async () => {
@@ -639,9 +638,6 @@ const ProTable = <T extends {}, U extends object>(
     }
   }, [propsPagination]);
 
-  const [selectedRowKeys, setSelectedRowKeys] = useMergeValue<React.ReactText[]>([], {
-    value: propsRowSelection ? propsRowSelection.selectedRowKeys : undefined,
-  });
   const [selectedRows, setSelectedRows] = useState<T[]>([]);
 
   // 映射 selectedRowKeys 与 selectedRow
